@@ -7,8 +7,8 @@
 :root {
   --background-primary: #F4F5FB;
   --background-secondary: #FFFFFF;
-  --color-brand: #CA3884;
-  --color-brand-hover: #A52C6B;
+  --color-brand: #009581;
+  --color-brand-hover: #006356;
   --color-danger: #C93847;
   --content-primary: #080B12;
   --content-secondary: #374151;
@@ -39,6 +39,11 @@ header {
   align-items: center;
   gap: 7px;
   justify-content: center;
+}
+
+.header-logo img {
+  width: 100px;
+  height: 100px;
 }
 
 strong {
