@@ -71,7 +71,7 @@ iconDelete.addEventListener("click", () => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register('/app_shopping/service-worker.js')
       .then(registration => {
         console.log("Service Worker registrado com sucesso:", registration);
       })
@@ -80,3 +80,4 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
