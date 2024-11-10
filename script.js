@@ -45,7 +45,7 @@ const addItem = (newItem) => {
     if(checkbox.checked) {
       p.style.textDecoration = "line-through"
       p.style.opacity = "0.3"
-    }else {
+    } else {
       p.style.textDecoration = "none"
       p.style.opacity = "1"
     }
@@ -80,4 +80,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-
