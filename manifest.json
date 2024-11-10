@@ -8,11 +8,6 @@
   "theme_color": "#CA3884",
   "icons": [
     {
-      "src": "/app_shopping/assets/lista_small.png", 
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
       "src": "/app_shopping/assets/lista_large.png",
       "sizes": "512x512",
       "type": "image/png"
