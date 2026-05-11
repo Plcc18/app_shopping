@@ -1,42 +1,124 @@
-# App Lista de Compras Dinâmica 🛒
+# 🛒 Carrinho — Lista de Compras
 
-![App Shopping List](https://github.com/Plcc18/app_shopping/blob/main/assets/app_list.png)
+App de lista de compras com PWA (instalável no celular), modo offline e comparação de preços.
 
+---
 
+## ▶️ Como rodar localmente
 
+Você precisa de qualquer servidor HTTP local. Escolha um dos métodos abaixo:
 
-## Descrição 📎
+### Opção 1 — Python (já vem instalado no Mac/Linux)
+```bash
+cd carrinho
+python3 -m http.server 3000
+```
+Abra: http://localhost:3000
 
-Este projeto é uma adaptação de outro projeto meu convertido para uma aplicação offline, que é uma lista de compras interativa e dinâmica, construída com HTML, CSS e JavaScript puro. Além de outras tecnologias em JavaScript como o Service Worker que permite o usuário utilizar a aplicação mesmo sem internet, e o Manifest em JSON que é onde está as configurações do aplicativo, como ícone, nome e etc. Além disso, adicionei funções de Local Storage que permitem que o usuário atualize ou feche a aplicação sem que os itens já adicionados a lista sejam perdidos.
+### Opção 2 — Node.js (npx, sem instalar nada)
+```bash
+cd carrinho
+npx serve .
+```
+Abra o endereço que aparecer no terminal.
 
-## Desenvolvimento do Projeto
+### Opção 3 — VS Code
+Instale a extensão **Live Server**, clique com botão direito em `index.html` → "Open with Live Server".
 
-- Projeto está completo.
+### Opção 4 — PHP
+```bash
+cd carrinho
+php -S localhost:3000
+```
 
-## Funcionalidades 🛒
-- **Adicionar Itens:** Insira novos itens na lista de compras.
-- **Marcar como Comprado:** Clique em um item para marcá-lo como já comprado.
-- **Excluir Itens:** Remova itens da lista com apenas um clique.
+> ⚠️ Não abra o `index.html` direto pelo explorador de arquivos (file://...) — o Service Worker não funciona sem um servidor HTTP.
 
-**Frontend:**
-- **HTML:** Estrutura do site.
-- **CSS:** Estilização do site.
-- **JavaScript:** Funcionalidades interativas, como adicionar itens a lista.
+---
 
-## Como Usar 💡
-- Abra via link na seção "About" do projeto e será exibida a opção de instalação do aplicativo.
-  OBS: Caso a opção não apareça, clique nos 3 pontinhos do navegador e selecione a opção "Adicionar a tela inicial" ou semelhante. Assim a opção de instalação deve ser exibida.
-- Adicione um item à lista digitando no campo de entrada e pressionando o botão de adicionar ou a tecla "ENTER".
-- Clique na caixinha ao lado de um item da lista para marcá-lo como comprado.
-- Remova qualquer item ao clicar na lixeira.
+## 📱 Instalar no celular (PWA)
 
-## Tecnologias 🛠️
+### Android (Chrome/Edge)
+1. Acesse o site no celular (veja "Publicar online" abaixo)
+2. Um banner aparece automaticamente: toque em **Instalar**
+3. Ou: menu (⋮) → "Adicionar à tela inicial"
 
-- Html
-- Css
-- Javascript
-- Google Fonts
-- Figma
+### iPhone (Safari)
+1. Acesse o site no Safari
+2. Toque no ícone de compartilhar (caixa com seta)
+3. "Adicionar à Tela Inicial"
+4. Pronto! O app fica igual a um app nativo
 
-## Links 🔗 
-[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/pedro-lucas-54b9a0331/)
+---
+
+## 🌐 Publicar online (para compartilhar com a família)
+
+### Opção 1 — GitHub Pages (gratuito, mais fácil)
+1. Crie uma conta em github.com
+2. Crie um repositório público
+3. Faça upload dos arquivos
+4. Vá em Settings → Pages → Branch: main → Save
+5. Seu link: `https://seu-usuario.github.io/carrinho`
+
+### Opção 2 — Netlify (gratuito, drag & drop)
+1. Acesse netlify.com → faça login
+2. Arraste a pasta `carrinho` para a área indicada
+3. Receba um link público imediatamente
+4. Ex: `https://meu-carrinho.netlify.app`
+
+### Opção 3 — Vercel (gratuito)
+```bash
+npm install -g vercel
+cd carrinho
+vercel
+```
+
+---
+
+## 👨‍👩‍👧 Compartilhar com a família
+
+**Modo simples (sem backend):**
+- Suba o app em qualquer um dos serviços acima
+- Compartilhe o link com a família
+- Cada pessoa tem sua própria lista (salva no celular)
+- Use o botão 📤 para enviar a lista por WhatsApp/Telegram
+
+**Modo colaborativo em tempo real (lista compartilhada):**
+- Integre com Firebase ou Supabase (banco de dados em nuvem)
+- Permite que família edite a MESMA lista simultaneamente
+- Requer conta no Firebase (gratuito até certo limite)
+
+---
+
+## 📁 Estrutura do projeto
+
+```
+carrinho/
+├── index.html      # Estrutura da página
+├── style.css       # Estilos e temas (claro/escuro)
+├── app.js          # Toda a lógica do app
+├── sw.js           # Service Worker (modo offline)
+├── manifest.json   # Configuração PWA
+├── icons/
+│   ├── icon-192.png
+│   └── icon-512.png
+└── README.md
+```
+
+---
+
+## ✨ Funcionalidades
+
+- ✅ Adicionar produtos com quantidade, unidade e preço
+- ✅ Categorias (Hortifruti, Carnes, Bebidas, etc.)
+- ✅ Marcar como comprado (move para o final)
+- ✅ Barra de progresso
+- ✅ Resumo de gastos (estimado / comprado / restante)
+- ✅ Favoritos e adição rápida com 1 clique
+- ✅ Busca em tempo real
+- ✅ Histórico de listas (salvar e reutilizar)
+- ✅ Comparação de preços por mercado
+- ✅ Compartilhar lista por WhatsApp/Telegram
+- ✅ Tema escuro
+- ✅ Modo offline (Service Worker)
+- ✅ Instalável como app (PWA)
+- ✅ Dados salvos no dispositivo (localStorage)
