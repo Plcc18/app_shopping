@@ -57,7 +57,7 @@ button{cursor:pointer}
 }
 
 /* ===== LAYOUT ===== */
-.app{max-width:480px;margin:0 auto;padding:0 0 88px}
+.app{max-width:480px;margin:0 auto;padding:0 0 100px}
 
 /* ===== HEADER ===== */
 .header{
@@ -75,6 +75,9 @@ button{cursor:pointer}
 .icon-btn:hover{background:var(--surface2);color:var(--text)}
 .icon-btn:active{transform:scale(0.9)}
 
+/* Shop mode active indicator */
+body.shop-mode #shopmode-btn{background:var(--brand);border-color:var(--brand)}
+
 /* ===== PROGRESS ===== */
 .progress-bar-wrap{padding:12px 16px 0}
 .progress-label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:6px}
@@ -86,12 +89,25 @@ button{cursor:pointer}
 .tabs{display:flex;gap:6px;padding:12px 16px 0;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{
+  position:relative;
   padding:7px 13px;border-radius:99px;font-size:13px;font-weight:500;
   cursor:pointer;white-space:nowrap;border:1px solid var(--border);
   background:var(--surface);color:var(--text2);transition:all .2s;user-select:none;flex-shrink:0
 }
 .tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 .tab:active{transform:scale(0.95)}
+
+/* Tab badge (pending count) */
+.tab::after{
+  content:attr(data-badge);
+  display:none;
+  position:absolute;top:-5px;right:-5px;
+  background:var(--danger);color:#fff;
+  font-size:10px;font-weight:700;line-height:1;
+  padding:2px 5px;border-radius:99px;min-width:16px;text-align:center;
+}
+.tab[data-badge]:not([data-badge=""])::after{display:block}
+.tab.active::after{background:rgba(255,255,255,0.9);color:var(--brand)}
 
 /* ===== SEARCH ===== */
 .search-wrap{padding:10px 16px 0;position:relative}
@@ -111,8 +127,6 @@ button{cursor:pointer}
   background:var(--surface);border:1.5px solid var(--border);
   border-radius:var(--r);padding:12px;box-shadow:var(--shadow)
 }
-
-/* Row 1: product name + category */
 .add-row{display:flex;gap:8px;margin-bottom:8px}
 .add-row input{
   flex:1;min-width:0;padding:10px 12px;border-radius:var(--r-sm);
@@ -130,8 +144,6 @@ button{cursor:pointer}
   background-repeat:no-repeat;background-position:right 10px center
 }
 .add-row select:focus{border-color:var(--brand)}
-
-/* Row 2: qty + price + button */
 .add-bottom{display:flex;gap:8px;align-items:stretch}
 .add-bottom input{
   padding:10px 12px;border-radius:var(--r-sm);
@@ -156,8 +168,6 @@ button{cursor:pointer}
 .quick-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .quick-chips::-webkit-scrollbar{display:none}
 .fav-hint{font-size:13px;color:var(--text3);padding:4px 0;white-space:nowrap}
-
-/* chip = name button + remove button */
 .chip-wrap{display:flex;align-items:center;flex-shrink:0}
 .chip{
   padding:7px 11px;border-radius:99px 0 0 99px;border:1.5px dashed var(--border);
@@ -192,23 +202,57 @@ button{cursor:pointer}
 .cat-name{font-size:13px;font-weight:600;color:var(--text2)}
 .cat-count{margin-left:auto;font-size:12px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:99px}
 
-/* ===== ITEM ===== */
+/* ===== ITEM WRAPPER (for swipe hints) ===== */
 .item{
-  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);
-  /* Use grid so columns are always respected */
-  display:grid;
-  grid-template-columns: 26px 1fr auto auto auto;
-  align-items:center;
-  gap:8px;
-  padding:10px 12px;
+  position:relative;
   margin-bottom:6px;
-  transition:opacity .3s;animation:slideIn .22s ease
+  border-radius:var(--r-sm);
+  overflow:hidden;
+}
+
+/* Swipe hint backgrounds */
+.swipe-hint{
+  position:absolute;top:0;bottom:0;width:80px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;z-index:0;
+  pointer-events:none;
+}
+.swipe-hint-left{right:0;background:var(--danger-light);}
+.swipe-hint-right{left:0;background:var(--brand-light);}
+
+/* ===== ITEM INNER (the draggable/swipeable surface) ===== */
+.item-inner{
+  position:relative;z-index:1;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);
+  display:grid;
+  grid-template-columns: 18px 26px 1fr auto auto auto;
+  align-items:center;
+  gap:6px;
+  padding:10px 12px;
+  transition:opacity .3s;animation:slideIn .22s ease;
+  cursor:default;
+  will-change:transform;
 }
 @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.item.bought{opacity:.52}
+.item.bought .item-check,
+.item.bought .item-body,
+.item.bought .qty-stepper,
+.item.bought .item-price,
+.item.bought .drag-handle{opacity:.45}
 .item.bought .item-name{text-decoration:line-through;color:var(--text3)}
 
-/* col 1: checkbox */
+/* drag */
+.item-inner.dragging{opacity:.5;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:10}
+.item-inner.drag-over{border-color:var(--brand);background:var(--brand-light)}
+
+/* ── col 1: drag handle */
+.drag-handle{
+  font-size:14px;color:var(--text3);cursor:grab;user-select:none;
+  letter-spacing:-1px;line-height:1;opacity:.5;flex-shrink:0
+}
+.drag-handle:active{cursor:grabbing}
+
+/* ── col 2: checkbox */
 .item-check{
   width:24px;height:24px;border-radius:7px;border:2px solid var(--border);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -218,12 +262,45 @@ button{cursor:pointer}
 .item-check.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:700}
 .item-check:active{transform:scale(0.85)}
 
-/* col 2: name + meta — truncates cleanly */
+/* ── col 3: body */
 .item-body{min-width:0;overflow:hidden}
-.item-name{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-view{min-width:0}
+.item-name{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .item-meta{font-size:12px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* col 3: stepper */
+/* edit form — when active, hides other cols and goes full-width */
+.item-body:has(.item-edit-form[style*="flex"]){width:100%}
+.item-inner.editing{grid-template-columns:1fr !important;padding:12px}
+.item-inner.editing .drag-handle,
+.item-inner.editing .item-check,
+.item-inner.editing .qty-stepper,
+.item-inner.editing .item-price,
+.item-inner.editing .item-actions{display:none !important}
+
+.item-edit-form{display:flex;flex-direction:column;gap:8px;min-width:0;width:100%}
+.edit-field{display:flex;flex-direction:column;gap:3px}
+.edit-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+.edit-inp{
+  padding:9px 11px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--surface2);color:var(--text);font-size:15px;outline:none;
+  transition:border .2s;width:100%;
+}
+.edit-inp:focus{border-color:var(--brand);background:var(--surface)}
+.edit-row{display:flex;gap:8px}
+.edit-row .edit-field{flex:1}
+.edit-btns{display:flex;gap:6px;margin-top:2px}
+.edit-save,.edit-cancel{
+  flex:1;padding:10px;border-radius:8px;border:1.5px solid transparent;
+  font-size:14px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:all .2s;
+}
+.edit-save{background:var(--brand);color:#fff;border-color:var(--brand)}
+.edit-save:hover{background:var(--brand2)}
+.edit-cancel{background:var(--surface2);color:var(--text2);border-color:var(--border)}
+.edit-cancel:hover{background:var(--danger-light);color:var(--danger);border-color:var(--danger)}
+
+/* ── col 4: stepper */
 .qty-stepper{
   display:flex;align-items:center;flex-shrink:0;
   border:1.5px solid var(--border);border-radius:8px;
@@ -240,22 +317,23 @@ button{cursor:pointer}
 .qty-btn[disabled]{opacity:.3;cursor:default}
 .qty-count{min-width:22px;text-align:center;font-size:14px;font-weight:600;color:var(--text)}
 
-/* col 4: price — fixed width so it never overflows */
+/* ── col 5: price */
 .item-price{
   font-size:13px;font-weight:700;color:var(--brand);
   white-space:nowrap;min-width:52px;text-align:right;flex-shrink:0
 }
 
-/* col 5: fav + delete */
+/* ── col 6: actions */
 .item-actions{display:flex;gap:2px;flex-shrink:0}
-.item-del,.item-fav{
+.item-del,.item-fav,.item-edit-btn{
   width:30px;height:30px;border-radius:7px;border:none;
   background:transparent;cursor:pointer;display:flex;align-items:center;
   justify-content:center;font-size:15px;color:var(--text3);transition:all .2s
 }
 .item-del:hover{background:var(--danger-light);color:var(--danger)}
+.item-edit-btn:hover{background:var(--brand-light);color:var(--brand)}
 .item-fav.active{color:var(--amber)}
-.item-del:active,.item-fav:active{transform:scale(0.85)}
+.item-del:active,.item-fav:active,.item-edit-btn:active{transform:scale(0.85)}
 
 /* ===== EMPTY STATE ===== */
 .empty{text-align:center;padding:48px 20px;color:var(--text3)}
@@ -266,18 +344,21 @@ button{cursor:pointer}
 .total-bar{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
   width:100%;max-width:480px;background:var(--surface);
-  border-top:1.5px solid var(--border);padding:12px 16px;
+  border-top:1.5px solid var(--border);padding:10px 16px;
   display:flex;align-items:center;gap:10px;
   box-shadow:0 -4px 20px rgba(0,0,0,0.06)
 }
 .total-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;line-height:1.2}
 .total-value{font-size:20px;font-weight:700;color:var(--brand);font-family:'DM Serif Display',serif;line-height:1;white-space:nowrap}
+.total-actions{margin-left:auto;display:flex;gap:5px;flex-shrink:0}
 .clear-btn{
-  margin-left:auto;padding:8px 13px;border-radius:99px;
+  padding:7px 11px;border-radius:99px;
   border:1.5px solid var(--border);background:transparent;
-  color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0
+  color:var(--text2);font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0
 }
 .clear-btn:hover{background:var(--danger-light);color:var(--danger);border-color:var(--danger)}
+.clear-all-btn{border-color:var(--danger);color:var(--danger)}
+.clear-all-btn:hover{background:var(--danger);color:#fff}
 
 /* ===== PANELS ===== */
 .panel{
@@ -323,8 +404,6 @@ button{cursor:pointer}
 .mkt-badge{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--brand-light);color:var(--brand-text);font-weight:600;white-space:nowrap;flex-shrink:0}
 .mkt-del{width:26px;height:26px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:13px;border-radius:6px;flex-shrink:0}
 .mkt-del:hover{background:var(--danger-light);color:var(--danger)}
-
-/* compare form inside panel */
 .panel .add-card{margin:0}
 
 /* ===== NOTIFICATION ===== */
@@ -338,22 +417,120 @@ button{cursor:pointer}
 }
 .notif.show{opacity:1}
 
-/* ===== SAFE AREA (iPhone home indicator / notch) ===== */
+/* ===== SHOP MODE ===== */
+body.shop-mode #add-form,
+body.shop-mode #quick-section{display:none}
+
+body.shop-mode .item-inner{
+  grid-template-columns: 26px 1fr auto;
+  padding:14px 16px;
+}
+body.shop-mode .drag-handle,
+body.shop-mode .qty-stepper,
+body.shop-mode .item-price,
+body.shop-mode .item-actions{display:none}
+body.shop-mode .item-check{width:30px;height:30px;border-radius:9px}
+body.shop-mode .item-name{font-size:19px}
+body.shop-mode .item-meta{font-size:14px}
+body.shop-mode .cat-name{font-size:15px}
+body.shop-mode .total-bar{padding:14px 16px}
+
+/* ===== SAFE AREA ===== */
 @supports(padding:max(0px)){
-  .total-bar{padding-bottom:max(12px, env(safe-area-inset-bottom))}
-  .app{padding-bottom:max(88px, calc(56px + env(safe-area-inset-bottom)))}
+  .total-bar{padding-bottom:max(10px, env(safe-area-inset-bottom))}
+  .app{padding-bottom:max(100px, calc(64px + env(safe-area-inset-bottom)))}
 }
 
-/* ===== VERY SMALL SCREENS (< 360px) ===== */
+/* ===== LANDSCAPE ===== */
+@media(orientation:landscape) and (max-height:500px){
+  .app{
+    max-width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
+    gap:0 16px;
+    padding:0 16px 80px;
+  }
+  .header{grid-column:1/-1;padding:10px 0 0}
+  .progress-bar-wrap{grid-column:1/-1;padding:8px 0 0}
+  .tabs{grid-column:1/-1;padding:8px 0 0}
+  .search-wrap{grid-column:1;padding:8px 0 0}
+  .add-form{grid-column:2;padding:8px 0 0}
+  .quick-section{grid-column:1/-1;padding:8px 0 0}
+  #price-summary{grid-column:1;margin:0}
+  .lists{grid-column:2;padding:0}
+  .price-card{margin:8px 0 0}
+  .total-bar{max-width:100%}
+}
+
+/* ===== iOS INSTALL BANNER ===== */
+.ios-banner{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:var(--surface);
+  border-top:1.5px solid var(--border);
+  border-radius:20px 20px 0 0;
+  padding:20px 20px 32px;
+  z-index:200;
+  box-shadow:0 -8px 32px rgba(0,0,0,0.12);
+  display:flex;flex-direction:column;gap:16px;
+  animation:slideUp .3s cubic-bezier(.4,0,.2,1);
+}
+@keyframes slideUp{from{transform:translateX(-50%) translateY(100%)}to{transform:translateX(-50%) translateY(0)}}
+
+.ios-banner-close{
+  position:absolute;top:14px;right:14px;
+  width:30px;height:30px;border-radius:50%;
+  border:1.5px solid var(--border);background:var(--surface2);
+  color:var(--text3);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.ios-banner-close:active{transform:scale(0.9)}
+
+.ios-banner-title{
+  font-size:16px;font-weight:700;color:var(--text);
+  padding-right:36px; /* avoid overlap with close btn */
+}
+
+.ios-banner-steps{display:flex;flex-direction:column;gap:12px}
+
+.ios-step{
+  display:flex;align-items:center;gap:12px;
+  font-size:14px;color:var(--text2);line-height:1.4;
+}
+.ios-step strong{color:var(--text)}
+
+.ios-step-icon{
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  background:var(--brand);color:#fff;
+  font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.ios-share-icon{
+  display:inline-flex;align-items:center;
+  background:var(--brand-light);color:var(--brand);
+  border-radius:7px;padding:4px 7px;margin-left:4px;flex-shrink:0;
+}
+
+.ios-banner-arrow{
+  text-align:center;font-size:20px;color:var(--brand);
+  animation:bounce .9s infinite alternate ease-in-out;
+}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(6px)}}
+
+/* ===== VERY SMALL SCREENS ===== */
 @media(max-width:360px){
   .add-row{flex-wrap:wrap}
   .add-row select{width:100%;flex-shrink:0}
   .add-bottom{flex-wrap:wrap}
   #inp-qty,#inp-price{flex:1}
   .add-btn{width:100%}
-  .item{grid-template-columns:24px 1fr auto auto auto;gap:5px;padding:9px 10px}
+  .item-inner{grid-template-columns:16px 24px 1fr auto auto auto;gap:4px;padding:9px 10px}
   .item-price{min-width:44px;font-size:12px}
   .qty-btn{width:24px;height:24px}
   .qty-count{min-width:18px;font-size:13px}
   .icon-btn{width:32px;height:32px;font-size:14px}
+  .total-actions{flex-direction:column;gap:3px}
+  .clear-btn{font-size:10px;padding:5px 8px}
 }

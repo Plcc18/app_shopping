@@ -4,11 +4,13 @@
 
 // ── State ────────────────────────────────────────────────────
 let items       = [];
-let favorites   = [];   // starts empty; user builds it by starring items
+let favorites   = [];
 let history     = [];
 let compareData = [];
 let activeTab   = 'all';
 let darkMode    = false;
+let shopMode    = false;
+let dragSrcId   = null;
 
 // ── Persistence ──────────────────────────────────────────────
 function load() {
@@ -30,7 +32,7 @@ function save() {
   } catch(e) { console.warn('Erro ao salvar:', e); }
 }
 
-// ── Price for one item (unit price × qty count) ───────────────
+// ── Price for one item ────────────────────────────────────────
 function itemTotal(it) {
   return (it.price || 0) * (it.qtyCount || 1);
 }
@@ -44,6 +46,11 @@ function notify(msg) {
   n._t = setTimeout(() => n.classList.remove('show'), 2400);
 }
 
+// ── Vibrate ──────────────────────────────────────────────────
+function vibe(ms = 50) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
 // ── Theme ────────────────────────────────────────────────────
 function toggleTheme() {
   darkMode = !darkMode;
@@ -54,6 +61,16 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : '');
   const btn = document.getElementById('theme-btn');
   if (btn) btn.textContent = darkMode ? '☀️' : '🌙';
+}
+
+// ── Shop mode ────────────────────────────────────────────────
+function toggleShopMode() {
+  shopMode = !shopMode;
+  document.body.classList.toggle('shop-mode', shopMode);
+  const btn = document.getElementById('shopmode-btn');
+  if (btn) btn.textContent = shopMode ? '✏️' : '🛍️';
+  if (btn) btn.title = shopMode ? 'Sair do modo compra' : 'Modo compra';
+  renderList();
 }
 
 // ── Add item ─────────────────────────────────────────────────
@@ -70,11 +87,12 @@ function addItem() {
     id: Date.now(),
     name,
     cat,
-    qty,         // label string e.g. "2 kg"
-    qtyCount: 1, // stepper count
-    price,       // unit price
+    qty,
+    qtyCount: 1,
+    price,
     bought: false,
     fav: false,
+    order: items.length,
   });
 
   document.getElementById('inp-name').value  = '';
@@ -87,13 +105,18 @@ function addItem() {
   notify('✅ ' + name + ' adicionado!');
 }
 
-// ── Toggle bought ────────────────────────────────────────────
+// ── Toggle bought ─────────────────────────────────────────────
 function toggleBought(id) {
   const it = items.find(i => i.id === id);
-  if (it) { it.bought = !it.bought; save(); renderList(); }
+  if (it) {
+    it.bought = !it.bought;
+    if (it.bought) vibe(50);
+    save();
+    renderList();
+  }
 }
 
-// ── Delete item ──────────────────────────────────────────────
+// ── Delete item ───────────────────────────────────────────────
 function deleteItem(id) {
   const it = items.find(i => i.id === id);
   items = items.filter(i => i.id !== id);
@@ -101,8 +124,67 @@ function deleteItem(id) {
   if (it) notify('🗑️ ' + it.name + ' removido');
 }
 
-// ── Toggle favourite ─────────────────────────────────────────
-// Starring saves the item to favorites[]. Unstarring removes it.
+// ── Clear ALL items ───────────────────────────────────────────
+function clearAll() {
+  if (items.length === 0) { notify('Lista já está vazia'); return; }
+  if (!confirm('Limpar TODA a lista? Isso remove todos os ' + items.length + ' itens.')) return;
+  items = [];
+  save(); renderList();
+  notify('🗑️ Lista zerada');
+}
+
+// ── Edit item inline ──────────────────────────────────────────
+function startEdit(id) {
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+
+  const nameEl  = document.getElementById('en-' + id);
+  const qtyEl   = document.getElementById('eq-' + id);
+  const priceEl = document.getElementById('ep-' + id);
+  const view    = document.getElementById('ev-' + id);
+  const form    = document.getElementById('ef-' + id);
+  const inner   = document.getElementById('item-' + id)?.querySelector('.item-inner');
+
+  if (!nameEl) return;
+  nameEl.value  = it.name;
+  qtyEl.value   = it.qty || '';
+  priceEl.value = it.price != null ? it.price : '';
+
+  view.style.display = 'none';
+  form.style.display = 'flex';
+  if (inner) inner.classList.add('editing');
+  nameEl.focus();
+  nameEl.select();
+}
+
+function saveEdit(id) {
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+
+  const nameEl  = document.getElementById('en-' + id);
+  const qtyEl   = document.getElementById('eq-' + id);
+  const priceEl = document.getElementById('ep-' + id);
+
+  const newName = nameEl.value.trim();
+  if (!newName) { notify('⚠️ Nome não pode ser vazio'); nameEl.focus(); return; }
+
+  it.name  = newName;
+  it.qty   = qtyEl.value.trim();
+  it.price = priceEl.value ? parseFloat(priceEl.value) : null;
+
+  save(); renderList();
+  notify('✏️ ' + it.name + ' atualizado');
+}
+
+function cancelEdit(id) {
+  const view  = document.getElementById('ev-' + id);
+  const form  = document.getElementById('ef-' + id);
+  const inner = document.getElementById('item-' + id)?.querySelector('.item-inner');
+  if (view && form) { view.style.display = ''; form.style.display = 'none'; }
+  if (inner) inner.classList.remove('editing');
+}
+
+// ── Toggle favourite ──────────────────────────────────────────
 function toggleFav(id) {
   const it = items.find(i => i.id === id);
   if (!it) return;
@@ -120,7 +202,7 @@ function toggleFav(id) {
   save(); renderList();
 }
 
-// ── Remove favourite from chip bar ──────────────────────────
+// ── Remove favourite from chip bar ───────────────────────────
 function removeFav(idx, e) {
   e.stopPropagation();
   const fav = favorites[idx];
@@ -131,7 +213,7 @@ function removeFav(idx, e) {
   notify('✕ ' + fav.name + ' removido dos favoritos');
 }
 
-// ── Quick-add from favourite chip ────────────────────────────
+// ── Quick-add from favourite chip ─────────────────────────────
 function quickAdd(idx) {
   const fav = favorites[idx];
   if (!fav) return;
@@ -144,12 +226,13 @@ function quickAdd(idx) {
     price: fav.price || null,
     bought: false,
     fav: true,
+    order: items.length,
   });
   save(); renderList();
   notify('⚡ ' + fav.name + ' adicionado!');
 }
 
-// ── Quantity stepper — patches DOM without full re-render ─────
+// ── Quantity stepper ──────────────────────────────────────────
 function changeQty(id, delta) {
   const it = items.find(i => i.id === id);
   if (!it) return;
@@ -166,7 +249,7 @@ function changeQty(id, delta) {
   updateTotals();
 }
 
-// ── Recalculate totals ────────────────────────────────────────
+// ── Totals ───────────────────────────────────────────────────
 function updateTotals() {
   const totalPrice  = items.reduce((s, i) => s + itemTotal(i), 0);
   const boughtPrice = items.filter(i => i.bought).reduce((s, i) => s + itemTotal(i), 0);
@@ -194,7 +277,7 @@ function clearBought() {
   notify('🗑️ ' + count + ' itens removidos');
 }
 
-// ── Tab filter ───────────────────────────────────────────────
+// ── Tab filter ────────────────────────────────────────────────
 function setTab(t, el) {
   activeTab = t;
   document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
@@ -202,7 +285,102 @@ function setTab(t, el) {
   renderList();
 }
 
-// ── Main render ──────────────────────────────────────────────
+// ── Swipe handling ────────────────────────────────────────────
+function setupSwipe(el, id) {
+  let startX = 0, startY = 0, dx = 0;
+  let swiping = false;
+
+  el.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dx = 0;
+    swiping = false;
+  }, { passive: true });
+
+  el.addEventListener('touchmove', e => {
+    const curX = e.touches[0].clientX;
+    const curY = e.touches[0].clientY;
+    dx = curX - startX;
+    const dy = curY - startY;
+
+    // Only swipe if horizontal movement dominates
+    if (Math.abs(dx) > Math.abs(dy) + 6) {
+      swiping = true;
+      const clamped = Math.max(-80, Math.min(80, dx));
+      el.style.transform = `translateX(${clamped}px)`;
+      el.style.transition = 'none';
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  el.addEventListener('touchend', () => {
+    el.style.transition = 'transform .25s ease';
+    if (swiping) {
+      if (dx < -55) {
+        // Swipe left → delete
+        el.style.transform = 'translateX(-100%)';
+        el.style.opacity = '0';
+        setTimeout(() => deleteItem(id), 230);
+      } else if (dx > 55) {
+        // Swipe right → toggle bought
+        el.style.transform = 'translateX(0)';
+        toggleBought(id);
+      } else {
+        el.style.transform = 'translateX(0)';
+      }
+    } else {
+      el.style.transform = 'translateX(0)';
+    }
+  });
+}
+
+// ── Drag-and-drop reorder ─────────────────────────────────────
+function setupDrag(el, id) {
+  el.setAttribute('draggable', 'true');
+
+  el.addEventListener('dragstart', e => {
+    dragSrcId = id;
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll('.item').forEach(i => i.classList.remove('drag-over'));
+  });
+
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.item').forEach(i => i.classList.remove('drag-over'));
+    el.classList.add('drag-over');
+  });
+
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    if (dragSrcId === id) return;
+
+    const srcItem  = items.find(i => i.id === dragSrcId);
+    const destItem = items.find(i => i.id === id);
+    if (!srcItem || !destItem) return;
+
+    // Reorder within the same category only
+    const srcIdx  = items.indexOf(srcItem);
+    const destIdx = items.indexOf(destItem);
+    items.splice(srcIdx, 1);
+    items.splice(destIdx, 0, srcItem);
+
+    save(); renderList();
+    dragSrcId = null;
+  });
+}
+
+// ── Counts per category (pending only) ───────────────────────
+function pendingCountByCat(cat) {
+  return items.filter(i => i.cat === cat && !i.bought).length;
+}
+
+// ── Main render ───────────────────────────────────────────────
 function renderList() {
   const q = (document.getElementById('search').value || '').toLowerCase();
   let filtered = items.filter(i =>
@@ -221,6 +399,18 @@ function renderList() {
   document.getElementById('prog-fill').style.width = pct + '%';
 
   updateTotals();
+
+  // ── tab badges (counts of pending items per category)
+  document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+    const cat = tab.dataset.tab;
+    if (cat === 'all') {
+      const pendingAll = items.filter(i => !i.bought).length;
+      tab.dataset.badge = pendingAll > 0 ? pendingAll : '';
+    } else {
+      const cnt = pendingCountByCat(cat);
+      tab.dataset.badge = cnt > 0 ? cnt : '';
+    }
+  });
 
   // ── favourite chips
   const chipsEl = document.getElementById('quick-chips');
@@ -267,35 +457,75 @@ function renderList() {
       const count = i.qtyCount || 1;
       const tot   = itemTotal(i);
 
-      // meta: show qty label and/or stepper count
       let meta = '';
       if (i.qty && count > 1)  meta = i.qty + ' × ' + count;
       else if (i.qty)          meta = i.qty;
       else if (count > 1)      meta = count + ' unidades';
 
-      html += `<div class="item ${i.bought ? 'bought' : ''}">
-        <div class="item-check ${i.bought ? 'checked' : ''}" onclick="toggleBought(${i.id})"></div>
-        <div class="item-body">
-          <div class="item-name">${i.name}</div>
-          ${meta ? `<div class="item-meta">${meta}</div>` : ''}
-        </div>
-        <div class="qty-stepper">
-          <button class="qty-btn" id="qminus-${i.id}" onclick="changeQty(${i.id},-1)"${count <= 1 ? ' disabled' : ''}>−</button>
-          <span class="qty-count" id="qc-${i.id}">${count}</span>
-          <button class="qty-btn" onclick="changeQty(${i.id},1)">+</button>
-        </div>
-        ${i.price != null
-          ? `<div class="item-price" id="ip-${i.id}">R$&nbsp;${tot.toFixed(2).replace('.', ',')}</div>`
-          : ''}
-        <div class="item-actions">
-          <button class="item-fav ${i.fav ? 'active' : ''}" onclick="toggleFav(${i.id})" title="${i.fav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}">⭐</button>
-          <button class="item-del" onclick="deleteItem(${i.id})" title="Remover item">🗑️</button>
+      html += `<div class="item ${i.bought ? 'bought' : ''}" id="item-${i.id}">
+        <div class="swipe-hint swipe-hint-left">🗑️</div>
+        <div class="swipe-hint swipe-hint-right">✅</div>
+        <div class="item-inner">
+          <div class="drag-handle" title="Arrastar para reordenar">⠿</div>
+          <div class="item-check ${i.bought ? 'checked' : ''}" onclick="toggleBought(${i.id})"></div>
+          <div class="item-body">
+            <!-- view mode -->
+            <div id="ev-${i.id}" class="item-view">
+              <div class="item-name" ondblclick="startEdit(${i.id})" title="Toque duplo para editar">${i.name}</div>
+              ${meta ? `<div class="item-meta">${meta}</div>` : ''}
+            </div>
+            <!-- edit mode -->
+            <div id="ef-${i.id}" class="item-edit-form" style="display:none">
+              <div class="edit-field">
+                <label class="edit-label">Nome do produto</label>
+                <input id="en-${i.id}" class="edit-inp" placeholder="Ex: Arroz integral" onkeydown="if(event.key==='Enter')saveEdit(${i.id});if(event.key==='Escape')cancelEdit(${i.id})">
+              </div>
+              <div class="edit-row">
+                <div class="edit-field">
+                  <label class="edit-label">Quantidade</label>
+                  <input id="eq-${i.id}" class="edit-inp" placeholder="Ex: 2 kg">
+                </div>
+                <div class="edit-field">
+                  <label class="edit-label">Preço (R$)</label>
+                  <input id="ep-${i.id}" class="edit-inp" type="number" step="0.01" placeholder="Ex: 8,90">
+                </div>
+              </div>
+              <div class="edit-btns">
+                <button class="edit-save" onclick="saveEdit(${i.id})">✓ Salvar</button>
+                <button class="edit-cancel" onclick="cancelEdit(${i.id})">✕ Cancelar</button>
+              </div>
+            </div>
+          </div>
+          <div class="qty-stepper">
+            <button class="qty-btn" id="qminus-${i.id}" onclick="changeQty(${i.id},-1)"${count <= 1 ? ' disabled' : ''}>−</button>
+            <span class="qty-count" id="qc-${i.id}">${count}</span>
+            <button class="qty-btn" onclick="changeQty(${i.id},1)">+</button>
+          </div>
+          ${i.price != null
+            ? `<div class="item-price" id="ip-${i.id}">R$&nbsp;${tot.toFixed(2).replace('.', ',')}</div>`
+            : ''}
+          <div class="item-actions">
+            <button class="item-edit-btn" onclick="startEdit(${i.id})" title="Editar item">✏️</button>
+            <button class="item-fav ${i.fav ? 'active' : ''}" onclick="toggleFav(${i.id})" title="${i.fav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}">⭐</button>
+            <button class="item-del" onclick="deleteItem(${i.id})" title="Remover item">🗑️</button>
+          </div>
         </div>
       </div>`;
     });
     html += '</div>';
   }
   container.innerHTML = html;
+
+  // Attach swipe and drag to each item-inner
+  all.forEach(i => {
+    const wrapper = document.getElementById('item-' + i.id);
+    if (!wrapper) return;
+    const inner = wrapper.querySelector('.item-inner');
+    if (inner) {
+      setupSwipe(inner, i.id);
+      setupDrag(inner, i.id);
+    }
+  });
 }
 
 // ── Panels ───────────────────────────────────────────────────
@@ -359,7 +589,7 @@ function renderHistory() {
     </div>`).join('');
 }
 
-// ── Price comparison ─────────────────────────────────────────
+// ── Price comparison ──────────────────────────────────────────
 function addCompare() {
   const prod  = document.getElementById('cmp-prod').value.trim();
   const mkt   = document.getElementById('cmp-mkt').value.trim();
@@ -402,7 +632,7 @@ function renderCompare() {
   c.innerHTML = html;
 }
 
-// ── Share ────────────────────────────────────────────────────
+// ── Share ─────────────────────────────────────────────────────
 function shareList() {
   const pending = items.filter(i => !i.bought);
   const bought  = items.filter(i => i.bought);
@@ -431,7 +661,7 @@ function shareList() {
   }
 }
 
-// ── PWA install ──────────────────────────────────────────────
+// ── PWA install ───────────────────────────────────────────────
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
@@ -449,14 +679,37 @@ function installApp() {
 window.addEventListener('appinstalled', () => {
   notify('🎉 App instalado!');
   document.getElementById('install-banner').style.display = 'none';
+  document.getElementById('ios-banner').style.display = 'none';
 });
 
-// ── Keyboard shortcuts ───────────────────────────────────────
+// ── iOS install tip ───────────────────────────────────────────
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function isInStandaloneMode() {
+  return ('standalone' in navigator && navigator.standalone) ||
+         window.matchMedia('(display-mode: standalone)').matches;
+}
+function dismissIosBanner() {
+  document.getElementById('ios-banner').style.display = 'none';
+  localStorage.setItem('ios_banner_dismissed', '1');
+}
+function maybeShowIosBanner() {
+  if (!isIos()) return;
+  if (isInStandaloneMode()) return;                          // já instalado
+  if (localStorage.getItem('ios_banner_dismissed')) return;  // já dispensou
+  setTimeout(() => {
+    document.getElementById('ios-banner').style.display = 'flex';
+  }, 1500); // pequeno delay para não assustar logo ao abrir
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') ['history', 'compare'].forEach(p => closePanel(p));
 });
 
-// ── Init ─────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 load();
 applyTheme();
 renderList();
+maybeShowIosBanner();

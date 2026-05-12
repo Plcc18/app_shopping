@@ -3,7 +3,7 @@
 //  ⚠️  Mude CACHE_VERSION sempre que atualizar o código!
 // ============================================================
 
-const CACHE_VERSION = 'v5';   // ← incremente aqui a cada deploy
+const CACHE_VERSION = 'v6';   // ← incremente aqui a cada deploy
 const CACHE = 'carrinho-' + CACHE_VERSION;
 
 const ASSETS = [

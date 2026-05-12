@@ -19,7 +19,7 @@
 
 <div id="notif" class="notif"></div>
 
-<!-- Install banner (shown on mobile) -->
+<!-- Install banner -->
 <div id="install-banner" class="install-banner" style="display:none">
   <span>📲 Instale o app no seu celular!</span>
   <button onclick="installApp()">Instalar</button>
@@ -32,6 +32,7 @@
     <div class="logo">🛒 Carrinho</div>
     <div class="header-actions">
       <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Alternar tema">🌙</button>
+      <button class="icon-btn" onclick="toggleShopMode()" id="shopmode-btn" title="Modo compra">🛍️</button>
       <button class="icon-btn" onclick="showPanel('history')" title="Histórico">📋</button>
       <button class="icon-btn" onclick="showPanel('compare')" title="Comparar preços">🏷️</button>
       <button class="icon-btn" onclick="shareList()" title="Compartilhar">📤</button>
@@ -56,6 +57,8 @@
     <div class="tab" data-tab="🥫 Mercearia" onclick="setTab('🥫 Mercearia',this)">🥫 Mercearia</div>
     <div class="tab" data-tab="🧀 Laticínios" onclick="setTab('🧀 Laticínios',this)">🧀 Laticínios</div>
     <div class="tab" data-tab="❄️ Congelados" onclick="setTab('❄️ Congelados',this)">❄️ Congelados</div>
+    <div class="tab" data-tab="💄 Cosméticos" onclick="setTab('💄 Cosméticos',this)">💄 Cosméticos</div>
+    <div class="tab" data-tab="📝 Papelaria" onclick="setTab('📝 Papelaria',this)">📝 Papelaria</div>
   </div>
 
   <div class="search-wrap">
@@ -63,7 +66,8 @@
     <input class="search-input" id="search" placeholder="Buscar item..." oninput="renderList()" autocomplete="off">
   </div>
 
-  <div class="add-form">
+  <!-- ADD FORM — hidden in shop mode -->
+  <div class="add-form" id="add-form">
     <div class="add-card">
       <div class="add-row">
         <input id="inp-name" placeholder="Nome do produto" onkeydown="if(event.key==='Enter')addItem()" autocomplete="off">
@@ -76,6 +80,8 @@
           <option value="🥫 Mercearia" selected>🥫 Mercearia</option>
           <option value="🧀 Laticínios">🧀 Laticínios</option>
           <option value="❄️ Congelados">❄️ Congelados</option>
+          <option value="💄 Cosméticos">💄 Cosméticos</option>
+          <option value="📝 Papelaria">📝 Papelaria</option>
         </select>
       </div>
       <div class="add-bottom">
@@ -86,7 +92,8 @@
     </div>
   </div>
 
-  <div class="quick-section">
+  <!-- QUICK CHIPS — hidden in shop mode -->
+  <div class="quick-section" id="quick-section">
     <div class="section-label">⭐ Favoritos</div>
     <div class="quick-chips" id="quick-chips"></div>
   </div>
@@ -102,7 +109,10 @@
     <div class="total-label">Total estimado</div>
     <div class="total-value" id="total-val">R$ 0,00</div>
   </div>
-  <button class="clear-btn" onclick="clearBought()">Limpar comprados</button>
+  <div class="total-actions">
+    <button class="clear-btn clear-all-btn" onclick="clearAll()" title="Limpar toda a lista">🗑️ Zerar tudo</button>
+    <button class="clear-btn" onclick="clearBought()">✅ Limpar comprados</button>
+  </div>
 </div>
 
 <!-- History panel -->
